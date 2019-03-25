@@ -29,43 +29,54 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Button startStopButton;
     private ProgressBar progressBar;
     private boolean isStarted = false;
-    private LineChart xChart;
+    private LineChart chart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Getting access to sensor manager
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mLight = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
 
+        // Getting references to form's fields
         sensorReadText = findViewById(R.id.sensorReadText);
         startStopButton = findViewById(R.id.startStopButton);
         progressBar = findViewById(R.id.progressBar);
         startStopButton.setText(isStarted ? "STOP" : "START");
         progressBar.setMax((int) mLight.getMaximumRange());
 
-        xChart = findViewById(R.id.xChart);
-//        xChart.getDescription().setEnabled(true);
-        xChart.setTouchEnabled(false);
-        xChart.setScaleEnabled(false);
-        xChart.setPinchZoom(false);
-        xChart.setData(new LineData());
+        // Initialize chart
+        chart = findViewById(R.id.chart);
+        chart.getDescription().setEnabled(false);
+        chart.setTouchEnabled(false);
+        chart.setScaleEnabled(false);
+        chart.setPinchZoom(false);
+        chart.setData(new LineData());
 
-        YAxis leftAxis = xChart.getAxisLeft();
+        // Configure chart's y axis
+        YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setTextColor(Color.WHITE);
         leftAxis.setDrawGridLines(false);
         leftAxis.setDrawGridLines(true);
 
     }
 
+    /**
+     * This is a trigger method that will be registered with the sensor manager
+     *
+     * @param event - details of the sensor event
+     */
     @Override
     public final void onSensorChanged(SensorEvent event) {
+        // Obtain the light sensor's value
         float lux = event.values[0];
         sensorReadText.setText(Float.toString(lux) + " Lux");
         progressBar.setProgress((int) lux);
 
-        LineData data = xChart.getData();
+        // Creating data for the line chart
+        LineData data = chart.getData();
 
         if (data != null) {
             ILineDataSet set = data.getDataSetByIndex(0);
@@ -76,13 +87,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             data.addEntry(new Entry(set.getEntryCount(), lux), 0);
             data.notifyDataChanged();
 
-            xChart.notifyDataSetChanged();
-            xChart.setVisibleXRangeMaximum(150);
-            xChart.moveViewToX(data.getEntryCount());
+            chart.notifyDataSetChanged();
+            chart.setVisibleXRangeMaximum(150);
+            chart.moveViewToX(data.getEntryCount());
         }
 
     }
 
+    /**
+     * This will produce an empty dataset
+     *
+     * @return set
+     */
     private LineDataSet createSet() {
         LineDataSet set = new LineDataSet(null, "Light Sensor (Lux)");
         set.setAxisDependency(YAxis.AxisDependency.LEFT);
@@ -96,11 +112,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         return set;
     }
 
+    /**
+     * Triggering event that comes with the SensorEventListener class
+     *
+     * @param sensor
+     * @param accuracy
+     */
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
 
+    /**
+     * Will register the event listener when the application resumes the activity according to the button status
+     */
     @Override
     protected void onResume() {
         super.onResume();
@@ -109,6 +134,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
+    /**
+     * Will unregister the event listener when the application resumes the activity according to the button status
+     */
     @Override
     protected void onPause() {
         super.onPause();
@@ -117,7 +145,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-
+    /**
+     * This method will be triggered when the start/stop button is pressed
+     * Will change the name of the button accordingly
+     * @param view
+     */
     public void startStopButtonPressed(View view) {
         if (!isStarted) {
             sensorManager.registerListener(this, mLight, SensorManager.SENSOR_DELAY_NORMAL);
